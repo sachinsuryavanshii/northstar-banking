@@ -22,18 +22,25 @@ spec:
           ports:
             - containerPort: 80
               name: http
-          readinessProbe:
+          startupProbe:
             httpGet:
               path: /
               port: 80
             initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 20
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
             periodSeconds: 5
             timeoutSeconds: 2
           livenessProbe:
             httpGet:
               path: /
               port: 80
-            initialDelaySeconds: 15
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
 ---

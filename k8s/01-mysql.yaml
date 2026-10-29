@@ -59,24 +59,30 @@ spec:
                 secretKeyRef:
                   name: northstar-secret
                   key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_ROOT_HOST
+              value: "%"
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
             - name: mysql-init-volume
               mountPath: /docker-entrypoint-initdb.d/init.sql
               subPath: init.sql
-          readinessProbe:
-            exec:
-              command: ["mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+          startupProbe:
+            tcpSocket:
+              port: 3306
             initialDelaySeconds: 15
             periodSeconds: 5
-            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 5
+            periodSeconds: 5
           livenessProbe:
-            exec:
-              command: ["mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 20
+            periodSeconds: 15
       volumes:
         - name: mysql-storage
           persistentVolumeClaim:
