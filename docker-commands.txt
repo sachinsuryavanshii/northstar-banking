@@ -1,0 +1,45 @@
+NORTHSTAR BANKING - DOCKER STEPS (run from this folder, the one with the parent pom.xml)
+
+1) BUILD JARS
+mvn clean package -DskipTests
+
+2) CREATE VOLUMES
+docker volume create auth-data
+docker volume create customer-data
+docker volume create account-data
+
+3) CREATE NETWORK
+docker network create bank-network
+
+4) BUILD IMAGES
+cd eureka-server    && docker build -t northstar/eureka-server . && cd ..
+cd auth-service     && docker build -t northstar/auth-service . && cd ..
+cd customer-service && docker build -t northstar/customer-service . && cd ..
+cd account-service  && docker build -t northstar/account-service . && cd ..
+cd api-gateway      && docker build -t northstar/api-gateway . && cd ..
+
+5) RUN CONTAINERS (one by one, test each)
+docker run -d --name eureka-server --network bank-network -p 8761:8761 northstar/eureka-server
+
+docker run -d --name auth-service --network bank-network -p 8083:8083 -v auth-data:/data -e EUREKA_URL=http://eureka-server:8761/eureka/ -e EUREKA_INSTANCE_PREFER_IP_ADDRESS=true -e SPRING_DATASOURCE_URL=jdbc:h2:file:/data/authdb northstar/auth-service
+
+docker run -d --name customer-service --network bank-network -p 8081:8081 -v customer-data:/data -e EUREKA_URL=http://eureka-server:8761/eureka/ -e EUREKA_INSTANCE_PREFER_IP_ADDRESS=true -e SPRING_DATASOURCE_URL=jdbc:h2:file:/data/customerdb northstar/customer-service
+
+docker run -d --name account-service --network bank-network -p 8082:8082 -v account-data:/data -e EUREKA_URL=http://eureka-server:8761/eureka/ -e EUREKA_INSTANCE_PREFER_IP_ADDRESS=true -e SPRING_DATASOURCE_URL=jdbc:h2:file:/data/accountdb northstar/account-service
+
+docker run -d --name api-gateway --network bank-network -p 8080:8080 -e EUREKA_URL=http://eureka-server:8761/eureka/ -e EUREKA_INSTANCE_PREFER_IP_ADDRESS=true northstar/api-gateway
+
+6) CHECK
+docker ps
+docker logs -f <container-name>
+
+7) STOP / REMOVE
+docker stop api-gateway account-service customer-service auth-service eureka-server
+docker rm api-gateway account-service customer-service auth-service eureka-server
+
+8) FULL CLEANUP (optional)
+docker rmi northstar/api-gateway northstar/account-service northstar/customer-service northstar/auth-service northstar/eureka-server
+docker volume rm auth-data customer-data account-data
+docker network rm bank-network
+
+AFTER ANY CODE CHANGE: mvn clean package -DskipTests -> rebuild that image -> docker rm -f <name> -> run it again.
