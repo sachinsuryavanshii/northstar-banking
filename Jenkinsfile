@@ -61,9 +61,9 @@ pipeline {
                 echo 'Building Docker container images for microservices and frontend...'
                 script {
                     if (isUnix()) {
-                        sh 'docker compose build'
+                        sh 'docker compose -p northstar-banking build'
                     } else {
-                        bat 'docker compose build'
+                        bat 'docker compose -p northstar-banking build'
                     }
                 }
             }
@@ -74,10 +74,10 @@ pipeline {
                 echo "Deploying Docker Desktop containers and Kubernetes workloads..."
                 script {
                     if (isUnix()) {
-                        sh 'docker compose up -d'
+                        sh 'docker compose -p northstar-banking up -d --remove-orphans'
                         sh 'kubectl cluster-info > /dev/null 2>&1 && kubectl apply -f k8s/ || echo "Kubernetes cluster not active; Docker Compose containers deployed to Docker Desktop."'
                     } else {
-                        bat 'docker compose up -d'
+                        bat 'docker compose -p northstar-banking up -d --remove-orphans'
                         bat '''
                             kubectl cluster-info >nul 2>&1
                             if %ERRORLEVEL% EQU 0 (
@@ -97,10 +97,10 @@ pipeline {
                 echo 'Verifying deployment status across all workloads...'
                 script {
                     if (isUnix()) {
-                        sh 'docker compose ps'
+                        sh 'docker compose -p northstar-banking ps'
                         sh 'kubectl cluster-info > /dev/null 2>&1 && kubectl rollout status deployment/frontend --timeout=30s || true'
                     } else {
-                        bat 'docker compose ps'
+                        bat 'docker compose -p northstar-banking ps'
                         bat '''
                             kubectl cluster-info >nul 2>&1
                             if %ERRORLEVEL% EQU 0 (
@@ -130,9 +130,9 @@ pipeline {
             echo 'Pipeline failed! Inspect console output and container logs.'
             script {
                 if (isUnix()) {
-                    sh 'docker compose ps || true'
+                    sh 'docker compose -p northstar-banking ps || true'
                 } else {
-                    bat 'docker compose ps || exit 0'
+                    bat 'docker compose -p northstar-banking ps || exit 0'
                 }
             }
         }
