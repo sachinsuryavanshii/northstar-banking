@@ -3,12 +3,17 @@ import axios from 'axios';
 // Smart resolution for API base URL:
 // 1. Explicit VITE_API_URL if configured
 // 2. If opened on Kubernetes NodePort 30173 -> talk to Gateway NodePort 30080
-// 3. Fallback to http://localhost:8080 (standard gateway port)
+// 3. If opened on Compose port 5173 -> talk to Gateway port 8084
+// 4. Fallback to http://localhost:8084
 const defaultBaseUrl = typeof window !== 'undefined' && window.location.port === '30173'
   ? 'http://localhost:30080'
-  : 'http://localhost:8080';
+  : (typeof window !== 'undefined' && window.location.port === '5173'
+      ? 'http://localhost:8084'
+      : 'http://localhost:8084');
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || defaultBaseUrl;
+const API_BASE_URL = (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== '')
+  ? import.meta.env.VITE_API_URL
+  : defaultBaseUrl;
 
 const client = axios.create({
   baseURL: API_BASE_URL,

@@ -80,14 +80,16 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy Containers (Docker Compose & Kubernetes)') {
             steps {
-                echo "Switching context to ${K8S_CONTEXT} and applying Kubernetes manifests..."
+                echo "Deploying Docker Desktop containers and Kubernetes workloads..."
                 script {
                     if (isUnix()) {
+                        sh 'docker compose up -d'
                         sh "kubectl config use-context ${K8S_CONTEXT} || true"
                         sh 'kubectl apply -f k8s/'
                     } else {
+                        bat 'docker compose up -d'
                         bat "kubectl config use-context ${K8S_CONTEXT} || echo Context switched or default"
                         bat 'kubectl apply -f k8s/'
                     }

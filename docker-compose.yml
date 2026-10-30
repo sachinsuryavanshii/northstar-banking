@@ -6,7 +6,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -105,7 +105,7 @@ services:
     container_name: api-gateway
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8084:8080"
     environment:
       EUREKA_URL: http://eureka-server:8761/eureka/
       JWT_SECRET: northstar-bank-super-secret-key-change-me-12345
