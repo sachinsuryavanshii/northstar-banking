@@ -69,46 +69,55 @@ pipeline {
             }
         }
 
-        stage('Deploy Containers (Docker Compose & Kubernetes)') {
+        stage('Deploy Containers (Docker Desktop)') {
             steps {
-                echo "Deploying Docker Desktop containers and Kubernetes workloads..."
+                echo "Deploying Docker Desktop containers via Docker Compose..."
                 script {
                     if (isUnix()) {
                         sh 'docker compose -p northstar-banking up -d --remove-orphans'
-                        sh 'kubectl cluster-info > /dev/null 2>&1 && kubectl apply -f k8s/ || echo "Kubernetes cluster not active; Docker Compose containers deployed to Docker Desktop."'
                     } else {
                         bat 'docker compose -p northstar-banking up -d --remove-orphans'
-                        bat '''
-                            kubectl cluster-info >nul 2>&1
-                            if %ERRORLEVEL% EQU 0 (
-                                echo Applying Kubernetes manifests...
-                                kubectl apply -f k8s/
-                            ) else (
-                                echo Kubernetes cluster not responding. Docker Compose containers deployed successfully to Docker Desktop!
-                            )
-                        '''
                     }
                 }
             }
         }
 
-        stage('Verify Rollout Status') {
+        stage('Deploy Kubernetes (Optional)') {
             steps {
-                echo 'Verifying deployment status across all workloads...'
+                echo "Checking Kubernetes availability..."
+                script {
+                    def k8sActive = false
+                    try {
+                        if (isUnix()) {
+                            sh 'kubectl version --request-timeout=2s'
+                        } else {
+                            bat 'kubectl version --request-timeout=2s'
+                        }
+                        k8sActive = true
+                    } catch (Exception e) {
+                        echo "Kubernetes is currently inactive; skipping k8s deployment. Docker Desktop containers are running."
+                    }
+
+                    if (k8sActive) {
+                        echo "Kubernetes cluster is active. Applying manifests..."
+                        if (isUnix()) {
+                            sh 'kubectl apply -f k8s/'
+                        } else {
+                            bat 'kubectl apply -f k8s/'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Verify Deployment Status') {
+            steps {
+                echo 'Verifying running containers in Docker Desktop...'
                 script {
                     if (isUnix()) {
                         sh 'docker compose -p northstar-banking ps'
-                        sh 'kubectl cluster-info > /dev/null 2>&1 && kubectl rollout status deployment/frontend --timeout=30s || true'
                     } else {
                         bat 'docker compose -p northstar-banking ps'
-                        bat '''
-                            kubectl cluster-info >nul 2>&1
-                            if %ERRORLEVEL% EQU 0 (
-                                kubectl rollout status deployment/frontend --timeout=30s
-                            ) else (
-                                echo Docker Desktop containers verified: all up and running.
-                            )
-                        '''
                     }
                 }
             }
@@ -119,7 +128,7 @@ pipeline {
         success {
             echo '=================================================='
             echo 'Northstar Banking CI/CD Pipeline Completed Successfully!'
-            echo 'Running containers accessible at:'
+            echo 'Running containers accessible in Docker Desktop:'
             echo '  Frontend:         http://localhost:5173'
             echo '  API Gateway:      http://localhost:8084'
             echo '  Eureka Dashboard: http://localhost:8761'
