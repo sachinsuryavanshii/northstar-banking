@@ -4,6 +4,15 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'local'
         K8S_CONTEXT = 'docker-desktop'
+        JAVA_HOME = 'C:\\Program Files\\Java\\latest\\jdk-25'
+        MAVEN_OPTS = '-Dmaven.repo.local=C:\\Users\\Admin\\.m2\\repository'
+        KUBECONFIG = 'C:\\Users\\Admin\\.kube\\config'
+        DOCKER_HOST = 'npipe:////./pipe/docker_engine'
+        PATH = "C:\\Program Files\\Java\\latest\\jdk-25\\bin;C:\\Users\\Admin\\AppData\\Local\\Programs\\ApacheMaven\\apache-maven-3.9.11\\bin;D:\\Program Files\\nodejs;C:\\Users\\Admin\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;C:\\Program Files\\Git\\cmd;${env.PATH}"
+    }
+
+    triggers {
+        pollSCM('* * * * *')
     }
 
     stages {
@@ -17,12 +26,11 @@ pipeline {
         stage('Maven Build (Backend)') {
             steps {
                 echo 'Building Spring Boot microservices...'
-                // Works on both Linux and Windows Jenkins nodes
                 script {
                     if (isUnix()) {
                         sh 'mvn clean package -DskipTests'
                     } else {
-                        bat 'mvn clean package -DskipTests'
+                        bat 'call mvn clean package -DskipTests'
                     }
                 }
             }
@@ -38,9 +46,9 @@ pipeline {
                             sh 'npm install'
                             sh 'npm run build'
                         } else {
-                            bat 'npm --version'
-                            bat 'npm install'
-                            bat 'npm run build'
+                            bat 'call npm --version'
+                            bat 'call npm install'
+                            bat 'call npm run build'
                         }
                     }
                 }
